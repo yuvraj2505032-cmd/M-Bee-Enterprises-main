@@ -1,0 +1,96 @@
+{
+  "entities": {
+    "CustomerProfile": {
+      "title": "CustomerProfile",
+      "description": "Customer profile created via Google Sign-In or mobile registration at M Bee Enterprises, Mahilpur.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the customer."
+        },
+        "memberId": {
+          "type": "string",
+          "description": "Unique M Bee Enterprises client ID (e.g. MBE-G4821)."
+        },
+        "name": {
+          "type": "string",
+          "description": "Full display name of the customer."
+        },
+        "mobile": {
+          "type": "string",
+          "description": "Customer mobile/WhatsApp number."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Google account email address of the customer."
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "Google profile picture URL."
+        },
+        "city": {
+          "type": "string",
+          "description": "City or village in Punjab (e.g., Mahilpur, Punjab)."
+        },
+        "occupation": {
+          "type": "string",
+          "description": "Customer occupation category."
+        },
+        "authProvider": {
+          "type": "string",
+          "enum": ["google", "mobile"],
+          "description": "Authentication provider used to create the profile."
+        },
+        "signedInAt": {
+          "type": "string",
+          "description": "Formatted sign-in timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last profile update."
+        },
+        "workHistory": {
+          "type": "array",
+          "description": "Recent service cards clicked or work requests submitted by this customer.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "referenceCode": { "type": "string" },
+              "serviceName": { "type": "string" },
+              "workDescription": { "type": "string" },
+              "createdAt": { "type": "string" }
+            }
+          }
+        },
+        "submittedDocuments": {
+          "type": "array",
+          "description": "Documents submitted by the customer to Admin with tracking status (Pending, Processing, Completed).",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "referenceNo": { "type": "string" },
+              "documentName": { "type": "string" },
+              "serviceCategory": { "type": "string" },
+              "submittedAt": { "type": "string" },
+              "status": { "type": "string", "enum": ["Pending", "Processing", "Completed"] },
+              "remarks": { "type": "string" }
+            }
+          }
+        }
+      },
+      "required": ["uid", "name", "authProvider", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/CustomerProfile"
+      },
+      "description": "Stores private Google-linked customer profiles and their clicked service history for M Bee Enterprises."
+    }
+  }
+}

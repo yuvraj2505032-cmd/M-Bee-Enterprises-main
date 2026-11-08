@@ -1,0 +1,90 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId} (matches request.auth.uid)
+    // Fields:
+    //   - uid: string (required, immutable, matches userId)
+    //   - memberId: string (optional, <= 40 chars)
+    //   - name: string (required, 1..120 chars)
+    //   - mobile: string (optional, <= 25 chars)
+    //   - email: string (optional, <= 160 chars)
+    //   - photoURL: string (optional, <= 1000 chars)
+    //   - city: string (optional, <= 120 chars)
+    //   - occupation: string (optional, <= 80 chars)
+    //   - authProvider: string (required, 'google' or 'mobile')
+    //   - signedInAt: string (optional, <= 60 chars)
+    //   - updatedAt: string (required, <= 60 chars)
+    //   - workHistory: list (optional, max 25 items)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (request.auth.token.email == "yuvraj2505032@gmail.com" &&
+         request.auth.token.email_verified == true);
+    }
+
+    function isOptionalString(data, field, maxLen) {
+      return !(field in data) || (data[field] is string && data[field].size() <= maxLen);
+    }
+
+    function isValidCustomerProfile(data, userId) {
+      return data.keys().hasAll(['uid', 'name', 'authProvider', 'updatedAt']) &&
+        data.keys().hasOnly([
+          'uid',
+          'memberId',
+          'name',
+          'mobile',
+          'email',
+          'photoURL',
+          'city',
+          'occupation',
+          'authProvider',
+          'signedInAt',
+          'updatedAt',
+          'workHistory',
+          'submittedDocuments'
+        ]) &&
+        data.uid is string && data.uid == userId &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 120 &&
+        data.authProvider in ['google', 'mobile'] &&
+        data.updatedAt is string && data.updatedAt.size() <= 60 &&
+        isOptionalString(data, 'memberId', 40) &&
+        isOptionalString(data, 'mobile', 25) &&
+        isOptionalString(data, 'email', 160) &&
+        isOptionalString(data, 'photoURL', 1000) &&
+        isOptionalString(data, 'city', 120) &&
+        isOptionalString(data, 'occupation', 80) &&
+        isOptionalString(data, 'signedInAt', 60) &&
+        (!('workHistory' in data) || (data.workHistory is list && data.workHistory.size() <= 25)) &&
+        (!('submittedDocuments' in data) || (data.submittedDocuments is list && data.submittedDocuments.size() <= 30));
+    }
+
+    match /test/connection {
+      allow get: if true;
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidCustomerProfile(request.resource.data, userId);
+      allow update: if (isOwner(userId) || isAdmin()) &&
+        isValidCustomerProfile(request.resource.data, userId) &&
+        request.resource.data.uid == resource.data.uid;
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+  }
+}
