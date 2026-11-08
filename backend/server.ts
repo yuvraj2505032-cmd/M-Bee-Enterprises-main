@@ -23,7 +23,7 @@ export function getConfiguredCorsOrigins(): string[] {
 
 export async function startBackendServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT ?? 3000);
 
   app.use(express.json({ limit: '2mb' }));
 
@@ -62,7 +62,22 @@ export async function startBackendServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`M Bee Enterprises Backend Server running on http://localhost:${PORT}`);
-  });
+  const startServer = (port: number) => {
+    const server = app.listen(port, '0.0.0.0', () => {
+      console.log(`M Bee Enterprises Backend Server running on http://localhost:${port}`);
+    });
+
+    server.on('error', (error: NodeJS.ErrnoException) => {
+      if (error.code === 'EADDRINUSE') {
+        const nextPort = port + 1;
+        console.warn(`Port ${port} is already in use. Trying ${nextPort} instead.`);
+        startServer(nextPort);
+        return;
+      }
+
+      throw error;
+    });
+  };
+
+  startServer(PORT);
 }
